@@ -1,6 +1,7 @@
 // Stylesheet for the lyrics page.
+import { css } from "../util.js";
 
-const CSS = `
+const CSS = css`
 #sl-overlay {
   --sl-bg: #1d1d1d;
   --sl-fg: #ffffff;

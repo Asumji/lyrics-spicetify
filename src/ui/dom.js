@@ -1,9 +1,10 @@
 // The lyrics page's DOM, shared by the UI modules. Mounted into Spotify's main view by overlay.js.
+import { html } from "../util.js";
 
 export const overlay = document.createElement("div");
 overlay.id = "sl-overlay";
 overlay.hidden = true;
-overlay.innerHTML = `
+overlay.innerHTML = html`
   <div class="sl-header">
     <img class="sl-cover" src="" alt="">
     <div class="sl-meta">

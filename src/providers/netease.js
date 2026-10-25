@@ -1,10 +1,11 @@
 // NetEase Cloud Music, via its unofficial web API. Good coverage of Asian music.
+// (Its word-level "YRC" lyrics need a logged-in account, so only line sync is used.)
 import { cleanTitle, cosmosGet, pickBest } from "../util.js";
 import { parseLRC, stripCredits } from "../lrc.js";
 
 export async function netease(track) {
   const params = new URLSearchParams({ s: `${cleanTitle(track.title)} ${track.artist}`, type: "1", limit: "15", offset: "0" });
-  const search = await cosmosGet(`https://music.163.com/api/search/pc?${params}`);
+  const search = await cosmosGet(`https://music.163.com/api/search/get?${params}`);
   const songs = search?.result?.songs;
   if (!songs?.length) return null;
 

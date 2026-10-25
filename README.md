@@ -14,7 +14,7 @@ Lyrics come from public lyrics databases (LRCLIB, Musixmatch and NetEase), so ma
 - **Multiple sources**, tried in an order you choose. Each source can be turned on or off.
 - **Source link**: click "via LRCLIB / Musixmatch / NetEase" to open the song's page on that site.
 - **Permanent cache** of synced lyrics, so a song is only looked up once.
-- **Karaoke view**: word-by-word highlighting for songs that have word timings on LRCLIB.
+- **Karaoke view**: word-by-word highlighting for songs that have word timings on LRCLIB or Musixmatch.
 - **Album-colour background**, plus a fallback to unsynced lyrics when no synced version exists.
 
 ## Requirements
@@ -83,9 +83,15 @@ Every match is checked against the playing song's title, artist and length, so l
 
 ## Karaoke view
 
-LRCLIB can store word-level timings in its [Lyricsfile](https://github.com/tranxuanthang/lyricsfile) format (marked "Word Synced" on lrclib.net). When the lyrics for a song include them, a **Karaoke** button appears in the header. Turn it on to see each word fill in as it's sung, instead of whole lines lighting up.
+When the lyrics for a song include word-level timings, a **Karaoke** button appears in the header. Turn it on to see each word fill in as it's sung, instead of whole lines lighting up.
 
-- Few songs on LRCLIB have word timings so far, so the button won't appear for most songs.
+| Source | Word timings |
+| --- | --- |
+| LRCLIB | Yes, from its [Lyricsfile](https://github.com/tranxuanthang/lyricsfile) format (marked "Word Synced" on lrclib.net). Few songs have them so far. |
+| Musixmatch | Yes, from its "richsync" lyrics, on songs Musixmatch has word-synced. Only works while Musixmatch isn't rate-limiting (see [Troubleshooting](#troubleshooting)). |
+| NetEase | No. Its word-level lyrics require a logged-in NetEase account. |
+
+- The button won't appear for most songs.
 - Lines without word timings are filled across the whole line.
 - Lyrics cached before karaoke support was added don't include word timings. Press **Refetch** to get them.
 

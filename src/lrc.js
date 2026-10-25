@@ -31,5 +31,5 @@ export function parseLRC(lrc) {
 }
 
 // Credits lines that some providers (mainly NetEase) put at the top of the lyrics.
-const CREDIT_RE = /^\s*(作词|作曲|编曲|制作人|混音|母带|和声|吉他|贝斯|鼓|监制|录音|lyricist|lyrics by|composer|composed by|producer|produced by|arranger|written by)\s*[:：]/i;
+const CREDIT_RE = /^\s*(作词|作曲|词|曲|编曲|制作人|混音|母带|和声|合声|吉他|贝斯|鼓|监制|录音|lyricist|lyrics by|composer|composed by|producer|produced by|arranger|written by)\p{Script=Han}{0,4}\s*[:：]/iu;
 export const stripCredits = (lines) => lines && lines.filter((l) => !CREDIT_RE.test(l.text));

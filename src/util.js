@@ -1,5 +1,10 @@
 // Shared helpers: text normalisation, network helpers and track matching.
 
+// Template tags marking CSS/HTML text. They return the text unchanged; build.mjs replaces
+// tagged templates with minified string literals.
+export const css = (strings) => strings.raw.join("");
+export const html = (strings) => strings.raw.join("");
+
 const normalize = (s) => (s || "").toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "");
 
 export function cleanTitle(title) {
