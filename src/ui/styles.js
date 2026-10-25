@@ -96,6 +96,14 @@ const CSS = css`
 #sl-overlay .sl-line.past .sl-word { background-image: none; color: var(--sl-past); }
 #sl-overlay .sl-message { font-size: 24px; font-weight: 700; color: var(--sl-past); }
 #sl-overlay .sl-note { font-size: 13px; color: var(--sl-past); margin-bottom: 24px; }
+#sl-overlay .sl-disclaimer {
+  display: inline-block;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  color: var(--sl-fg);
+  font-weight: 600;
+}
 `;
 
 export function injectStyles() {

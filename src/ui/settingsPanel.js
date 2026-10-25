@@ -2,6 +2,25 @@
 import { PROVIDER_LABELS, saveSettings, settings } from "../settings.js";
 import { settingsEl } from "./dom.js";
 
+// A settings row with an on/off checkbox for the provider.
+function providerRow(name, labelText) {
+  const row = document.createElement("div");
+  row.className = "sl-provider";
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.id = `sl-p-${name}`;
+  cb.checked = !!settings.enabled[name];
+  cb.addEventListener("change", () => {
+    settings.enabled[name] = cb.checked;
+    saveSettings();
+  });
+  const label = document.createElement("label");
+  label.htmlFor = cb.id;
+  label.textContent = labelText;
+  row.append(cb, label);
+  return row;
+}
+
 export function renderSettings() {
   settingsEl.textContent = "";
   const h = document.createElement("h4");
@@ -9,19 +28,7 @@ export function renderSettings() {
   settingsEl.appendChild(h);
 
   settings.order.forEach((name, i) => {
-    const row = document.createElement("div");
-    row.className = "sl-provider";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.id = `sl-p-${name}`;
-    cb.checked = !!settings.enabled[name];
-    cb.addEventListener("change", () => {
-      settings.enabled[name] = cb.checked;
-      saveSettings();
-    });
-    const label = document.createElement("label");
-    label.htmlFor = cb.id;
-    label.textContent = PROVIDER_LABELS[name];
+    const row = providerRow(name, PROVIDER_LABELS[name]);
     const move = (delta) => {
       const j = i + delta;
       if (j < 0 || j >= settings.order.length) return;
@@ -35,7 +42,11 @@ export function renderSettings() {
     const down = document.createElement("button");
     down.textContent = "↓";
     down.addEventListener("click", () => move(1));
-    row.append(cb, label, up, down);
+    row.append(up, down);
     settingsEl.appendChild(row);
   });
+
+  const fallback = document.createElement("h4");
+  fallback.textContent = "Fallback (only when no provider above has lyrics)";
+  settingsEl.append(fallback, providerRow("genius", `${PROVIDER_LABELS.genius} (unsynced lyrics)`));
 }

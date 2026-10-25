@@ -1,7 +1,7 @@
 {
   "name": "lyrics-spicetify",
   "author": "Asumji",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Spicetify extension that shows live synced lyrics from various providers.",
   "scripts": {

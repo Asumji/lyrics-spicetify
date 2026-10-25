@@ -2,7 +2,7 @@
 // The UI subscribes with onLyricsChange() and reads `state` / `karaoke` / `refetching`.
 import { lyricsCache } from "./cache.js";
 import { hasWordSync } from "./lyricsfile.js";
-import { providers } from "./providers/registry.js";
+import { fallbackProvider, providers } from "./providers/registry.js";
 import { settings } from "./settings.js";
 import { withTimeout } from "./util.js";
 
@@ -91,6 +91,18 @@ async function searchProviders(track, id) {
 
   if (plainFallback) return plainFallback;
   if (instrumentalFrom) return { status: "instrumental", source: instrumentalFrom, url: instrumentalUrl, lines: null, plain: null };
+
+  // Nothing anywhere: try the unsynced-only fallback (Genius).
+  if (settings.enabled[fallbackProvider.name]) {
+    try {
+      const r = await withTimeout(fallbackProvider.fetch(track), 10000);
+      if (id !== requestId) return null;
+      if (r?.plain) return { status: "plain", source: fallbackProvider.name, url: r.url || null, lines: null, plain: r.plain };
+    } catch (err) {
+      if (id !== requestId) return null;
+      console.warn(`[synced-lyrics] ${fallbackProvider.name} failed:`, err);
+    }
+  }
   return { status: "notfound", source: null, url: null, lines: null, plain: null };
 }
 

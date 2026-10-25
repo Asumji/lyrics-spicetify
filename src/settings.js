@@ -6,13 +6,16 @@ export const MXM_TOKEN_KEY = "synced-lyrics:mxm-token";
 
 export const PROVIDER_LABELS = {
   lrclib: "LRCLIB",
+  lyricsplus: "Lyrics+",
   musixmatch: "Musixmatch",
   netease: "NetEase",
+  genius: "Genius",
 };
 
+// Genius isn't in `order`: it's only asked as a final fallback when no other provider has lyrics.
 const DEFAULT_SETTINGS = {
-  order: ["lrclib", "musixmatch", "netease"],
-  enabled: { lrclib: true, musixmatch: true, netease: true },
+  order: ["lrclib", "lyricsplus", "musixmatch", "netease"],
+  enabled: { lrclib: true, lyricsplus: true, musixmatch: true, netease: true, genius: true },
   karaoke: false,
 };
 
@@ -38,9 +41,11 @@ export const settings = (() => {
     ...saved,
     enabled: { ...DEFAULT_SETTINGS.enabled, ...(saved.enabled || {}) },
   };
-  // Keep the order list in sync with known providers.
-  const order = (saved.order || []).filter((p) => p in PROVIDER_LABELS);
-  for (const p of DEFAULT_SETTINGS.order) if (!order.includes(p)) order.push(p);
+  // Keep the order list in sync with the ordered providers; newly added ones go in at their default position.
+  const order = (saved.order || []).filter((p) => DEFAULT_SETTINGS.order.includes(p));
+  DEFAULT_SETTINGS.order.forEach((p, i) => {
+    if (!order.includes(p)) order.splice(Math.min(i, order.length), 0, p);
+  });
   merged.order = order;
   return merged;
 })();

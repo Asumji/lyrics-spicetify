@@ -128,8 +128,11 @@ function renderMain(track, status, lines, plain) {
       linesEl.textContent = "";
       lineEls = [];
       const note = document.createElement("div");
-      note.className = "sl-note";
-      note.textContent = "Only unsynced lyrics were found for this song.";
+      note.className = "sl-note sl-disclaimer";
+      note.textContent =
+        state.source === "genius"
+          ? "Not synced: no synced lyrics were found for this song, so these lyrics from Genius won't highlight or scroll along with the music."
+          : "Not synced: only unsynced lyrics were found for this song, so they won't highlight or scroll along with the music.";
       linesEl.appendChild(note);
       for (const text of plain.split(/\r?\n/)) {
         const el = document.createElement("div");

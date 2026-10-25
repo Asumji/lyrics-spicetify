@@ -5,7 +5,7 @@
 export const css = (strings) => strings.raw.join("");
 export const html = (strings) => strings.raw.join("");
 
-const normalize = (s) => (s || "").toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "");
+export const normalize = (s) => (s || "").toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "");
 
 export function cleanTitle(title) {
   return (title || "")
@@ -29,6 +29,25 @@ export async function fetchWithRetry(url) {
 export async function cosmosGet(url, headers) {
   const res = await Spicetify.CosmosAsync.get(url, null, headers);
   return typeof res === "string" ? JSON.parse(res) : res;
+}
+
+// Fetches a non-JSON page (e.g. HTML) through Spotify, which isn't subject to CORS.
+export function cosmosGetText(url) {
+  if (typeof window.sendCosmosRequest !== "function") return fetch(url).then((r) => r.text());
+  return new Promise((resolve, reject) => {
+    window.sendCosmosRequest({
+      request: JSON.stringify({ method: "GET", uri: url }),
+      persistent: false,
+      onSuccess: (response) => {
+        try {
+          resolve(JSON.parse(response)?.body ?? "");
+        } catch (err) {
+          reject(err);
+        }
+      },
+      onFailure: reject,
+    });
+  });
 }
 
 // Picks the candidate that best matches the current track.

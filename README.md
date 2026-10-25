@@ -2,7 +2,7 @@
 
 A [Spicetify](https://spicetify.app) extension that shows live, time-synced lyrics for songs Spotify has no lyrics for. It adds a microphone button to the playbar. Click it to open a lyrics page that highlights the current line and scrolls along with the song.
 
-Lyrics come from public lyrics databases (LRCLIB, Musixmatch and NetEase), so many songs missing from Spotify's own lyrics are covered.
+Lyrics come from public lyrics databases (LRCLIB, Lyrics+, Musixmatch and NetEase, with Genius as an unsynced fallback), so many songs missing from Spotify's own lyrics are covered.
 
 ## Features
 
@@ -12,7 +12,7 @@ Lyrics come from public lyrics databases (LRCLIB, Musixmatch and NetEase), so ma
 - **Free scrolling**: scroll manually to look around; auto-scroll resumes after 3 seconds.
 - **Timing offset** (−0.5s / +0.5s) for songs whose lyrics are slightly early or late, saved per song.
 - **Multiple sources**, tried in an order you choose. Each source can be turned on or off.
-- **Source link**: click "via LRCLIB / Musixmatch / NetEase" to open the song's page on that site.
+- **Source link**: click "via LRCLIB / Musixmatch / NetEase / Genius" to open the song's page on that site.
 - **Permanent cache** of synced lyrics, so a song is only looked up once.
 - **Karaoke view**: word-by-word highlighting for songs that have word timings on LRCLIB or Musixmatch.
 - **Album-colour background**, plus a fallback to unsynced lyrics when no synced version exists.
@@ -67,19 +67,23 @@ Header controls:
 | **Karaoke** | Switches between the normal view and word-by-word highlighting (see [Karaoke view](#karaoke-view)). Your choice is remembered. |
 | **−0.5s / +0.5s** | Shifts the lyrics later or earlier for this song. The offset is remembered. |
 | **Refetch** | Searches all sources online again (see [Caching](#caching)). |
-| **Settings** | Turn sources on or off and change the order they're tried in (↑ / ↓). |
+| **Settings** | Turn sources on or off and change the order they're tried in (↑ / ↓). The Genius fallback has its own on/off switch. |
 
 ## Lyrics sources
 
-Sources are tried top to bottom; the first one with **synced** lyrics wins. If none has synced lyrics, unsynced lyrics are shown with a note.
+Sources are tried top to bottom (the default order is shown below); the first one with **synced** lyrics wins. If none has synced lyrics, unsynced lyrics from them are shown instead. Only if no source has any lyrics at all is Genius asked as a final fallback.
 
 | Source | Notes | "via" link opens |
 | --- | --- | --- |
 | [LRCLIB](https://lrclib.net) | Free, open, community-run lyrics database. Best first choice. | `lrclib.net/tracks/<id>` |
+| [Lyrics+](https://github.com/ibratabian17/lyricsplus) | Open-source lyrics API (used by YouLy+) that searches Apple Music, QQ Music, Musixmatch, Deezer and its own community lyrics. Uses the free public server, which is rate-limited. | No link (it isn't a website) |
 | [Musixmatch](https://www.musixmatch.com) | Large catalogue, accessed through the iOS app's unofficial API (like Spicetify's Lyrics Plus). May be rate-limited (see Troubleshooting). | The song's Musixmatch lyrics page |
 | [NetEase Cloud Music](https://music.163.com) | Good coverage of Asian music. Unofficial API. | `music.163.com/#/song?id=<id>` |
+| [Genius](https://genius.com) | **Fallback only, unsynced.** Used when none of the sources above has any lyrics. | The song's Genius page |
 
-Every match is checked against the playing song's title, artist and length, so lyrics for an unrelated song are thrown out.
+Every match is checked against the playing song's title, artist and length (Genius: title and artist), so lyrics for an unrelated song are thrown out. Lyrics+ does its own matching.
+
+Unsynced lyrics (from Genius or any other source) are shown with a disclaimer at the top saying they aren't synced, so they don't highlight or scroll along with the music.
 
 ## Karaoke view
 
@@ -92,8 +96,10 @@ Click **Karaoke** in the header to see each word fill in as it's sung, instead o
 | Source | Word timings |
 | --- | --- |
 | LRCLIB | Yes, from its [Lyricsfile](https://github.com/tranxuanthang/lyricsfile) format (marked "Word Synced" on lrclib.net). Few songs have them so far. |
+| Lyrics+ | Yes, mostly from Apple Music, which many popular songs have. |
 | Musixmatch | Yes, from its "richsync" lyrics, which many popular songs have. |
 | NetEase | No. Its word-level lyrics require a logged-in NetEase account. |
+| Genius | No (unsynced only, and never used for the karaoke view). |
 
 - Word-synced lyrics are still rare, so expect "No lyrics found" in the karaoke view for most songs.
 - Lines without word timings are filled across the whole line.
@@ -163,10 +169,12 @@ src/
   lrc.js                LRC parser
   lyricsfile.js         Lyricsfile (YAML) parser for word timings
   providers/
-    registry.js         provider registry
+    registry.js         provider registry (ordered providers + the Genius fallback)
     lrclib.js           LRCLIB
+    lyricsplus.js       Lyrics+
     musixmatch.js       Musixmatch
     netease.js          NetEase Cloud Music
+    genius.js           Genius (unsynced fallback)
   ui/
     overlay.js          playbar button, open/close, header controls
     lyricsView.js       renders lyrics, line and karaoke sync, auto-scroll
@@ -202,9 +210,9 @@ Pushes that don't change the version don't create a release.
 
 ## Disclaimer
 
-This project is not affiliated with Spotify, Spicetify, Musixmatch, NetEase or LRCLIB. Musixmatch and NetEase are accessed through unofficial APIs that can change or stop working at any time. Lyrics belong to their respective rights holders.
+This project is not affiliated with Spotify, Spicetify, Musixmatch, NetEase, Genius, LRCLIB or Lyrics+. Musixmatch, NetEase and Genius are accessed through unofficial APIs, and Lyrics+ through a free community-run server; any of them can change or stop working at any time. Lyrics belong to their respective rights holders.
 
 ## Credits
 
 - Source handling is inspired by [syncedlyrics](https://github.com/moehmeni/syncedlyrics) by moehmeni.
-- Lyrics data from [LRCLIB](https://lrclib.net), [Musixmatch](https://www.musixmatch.com) and [NetEase Cloud Music](https://music.163.com).
+- Lyrics data from [LRCLIB](https://lrclib.net), [Lyrics+](https://github.com/ibratabian17/lyricsplus) by ibratabian17, [Musixmatch](https://www.musixmatch.com), [NetEase Cloud Music](https://music.163.com) and [Genius](https://genius.com).
