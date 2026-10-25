@@ -24,7 +24,7 @@ Lyrics come from public lyrics databases (LRCLIB, Musixmatch and NetEase), so ma
 
 ## Installation
 
-1. Download the ready-built [`dist/syncedLyrics.js`](dist/syncedLyrics.js) from this repository (or [build it yourself](#development)).
+1. Download [`syncedLyrics.js`](https://github.com/Asumji/lyrics-spicetify/releases/latest/download/syncedLyrics.js) from the [latest release](https://github.com/Asumji/lyrics-spicetify/releases/latest) (or [build it yourself](#development)).
 2. Copy it into your Spicetify `Extensions` folder:
 
    | OS | Folder |
@@ -43,7 +43,7 @@ spicetify apply
 
 ### Updating
 
-Replace `syncedLyrics.js` in the `Extensions` folder with the new version and run `spicetify apply` again. From a clone of this repo, `npm run deploy` does the build and copy for you.
+Download the newest `syncedLyrics.js` from the [latest release](https://github.com/Asumji/lyrics-spicetify/releases/latest), replace the one in the `Extensions` folder, and run `spicetify apply` again. From a clone of this repo, `npm run deploy` does the build and copy for you.
 
 ### Uninstalling
 
@@ -174,7 +174,9 @@ src/
     dom.js              the lyrics page's DOM
     styles.js           CSS
 build.mjs               bundler
-dist/syncedLyrics.js    built, minified extension (committed so users can download it)
+dist/syncedLyrics.js    built, minified extension (not committed; published in releases)
+.github/workflows/
+  release.yml           builds and publishes a release when the version in package.json changes
 ```
 
 ### Bundler rules
@@ -186,7 +188,17 @@ The bundler concatenates the modules into one shared scope, so it supports a del
 - Every top-level name must be unique across all of `src/`, and imports can't be circular.
 - CSS and HTML go in `` css`...` `` / `` html`...` `` templates (from `src/util.js`) without `${}` placeholders, so the build can minify them.
 
-The build fails with a clear message if any rule is broken. Run `npm run build` and commit `dist/syncedLyrics.js` along with your changes to `src/`.
+The build fails with a clear message if any rule is broken.
+
+### Releases
+
+`dist/` isn't committed. Instead, [`.github/workflows/release.yml`](.github/workflows/release.yml) builds the extension on GitHub and publishes it as a release:
+
+1. Raise `version` in `package.json` (for example `1.0.0` → `1.0.1`).
+2. Push to `main`.
+3. If no release named `v<version>` exists yet, the workflow builds `syncedLyrics.js` and publishes release `v<version>` with the file attached and the commit message as release notes. It's marked as the latest release, so the download link in [Installation](#installation) points to it.
+
+Pushes that don't change the version don't create a release.
 
 ## Disclaimer
 
