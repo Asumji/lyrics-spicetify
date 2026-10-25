@@ -1,8 +1,8 @@
 // Wires up the lyrics page: playbar button, opening/closing, header controls and keyboard/navigation handling.
-import { onLyricsChange, onSongChange, refetchLyrics, refetching, state } from "../lyrics.js";
+import { ensureKaraoke, onLyricsChange, onSongChange, refetchLyrics, refetching, state } from "../lyrics.js";
 import { getOffset, saveSettings, setOffset, settings } from "../settings.js";
 import { $, overlay, settingsEl } from "./dom.js";
-import { render, resync, startSync, stopSync } from "./lyricsView.js";
+import { render, resync, shownUrl, startSync, stopSync } from "./lyricsView.js";
 import { renderSettings } from "./settingsPanel.js";
 import { injectStyles } from "./styles.js";
 
@@ -50,8 +50,8 @@ function updateRefetchButton() {
 }
 
 function onOverlayClick(e) {
-  if (e.target.closest(".sl-source") && state.url) {
-    window.open(state.url, "_blank");
+  if (e.target.closest(".sl-source") && shownUrl()) {
+    window.open(shownUrl(), "_blank");
     return;
   }
   const act = e.target.closest("button[data-act]")?.dataset.act;
@@ -72,6 +72,7 @@ function onOverlayClick(e) {
       settings.karaoke = !settings.karaoke;
       saveSettings();
       render();
+      ensureKaraoke();
       break;
     case "offset-minus":
     case "offset-plus":

@@ -13,7 +13,7 @@ overlay.innerHTML = html`
     </div>
     <div class="sl-controls">
       <span class="sl-source"></span>
-      <button data-act="karaoke" title="Word-by-word highlighting" hidden>Karaoke</button>
+      <button data-act="karaoke" title="Word-by-word highlighting">Karaoke</button>
       <button data-act="offset-minus" title="Show lyrics later">−0.5s</button>
       <span class="sl-offset" title="Timing offset for this song"></span>
       <button data-act="offset-plus" title="Show lyrics earlier">+0.5s</button>

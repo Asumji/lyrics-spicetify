@@ -1,4 +1,5 @@
 // Synced lyrics are cached permanently in IndexedDB; unsynced results are never cached.
+// Keys are Spotify URIs; word-synced lyrics for the karaoke view use "<uri>#karaoke".
 export const lyricsCache = (() => {
   const memory = new Map(); // uri -> entry, mirrors what has been read/written this session
   const dbPromise = new Promise((resolve) => {

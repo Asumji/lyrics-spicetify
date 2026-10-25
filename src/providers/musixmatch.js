@@ -1,32 +1,51 @@
-// Musixmatch, via the desktop app's unofficial API (the same approach syncedlyrics uses).
+// Musixmatch, via the iOS app's unofficial API, the same way Spicetify's Lyrics Plus app does it.
+// (The desktop app's API, which syncedlyrics uses, now only hands out placeholder tokens.)
 import { cosmosGet, pickBest } from "../util.js";
 import { parseLRC } from "../lrc.js";
 import { MXM_TOKEN_KEY, readJSON, writeJSON } from "../settings.js";
 
+const API = "https://apic-appmobile.musixmatch.com/ws/1.1/";
+const APP_ID = "mac-ios-v2.0";
+const HEADERS = {
+  Host: "apic-appmobile.musixmatch.com",
+  authority: "apic-appmobile.musixmatch.com",
+  "X-Cookie": "x-mxm-token-guid=",
+  "x-mxm-app-version": "10.1.1",
+  "X-User-Agent": "Musixmatch/2025120901 CFNetwork/3860.300.31 Darwin/25.2.0",
+  "Accept-Language": "en-US,en;q=0.9",
+  Connection: "keep-alive",
+  Accept: "application/json",
+};
+// token.get is rate-limited, so after a failed attempt wait this long before asking again.
+const TOKEN_RETRY_MS = 10 * 60 * 1000;
+
+const isPlaceholderToken = (token) => !token || token.startsWith("UpgradeOnly") || /^0+$/.test(token);
+
+// Returns the saved token (kept until Musixmatch rejects it) or requests a new one.
+async function getToken(force) {
+  const saved = readJSON(MXM_TOKEN_KEY, null);
+  if (!force && saved?.token && !isPlaceholderToken(saved.token)) return saved.token;
+  if (saved?.retryAt > Date.now()) throw new Error("Musixmatch token request is rate-limited, retrying later");
+
+  const j = await cosmosGet(`${API}token.get?app_id=${APP_ID}`, HEADERS);
+  const header = j?.message?.header;
+  const token = j?.message?.body?.user_token;
+  // When rate-limited, Musixmatch answers 401 or hands out a placeholder token that returns decoy lyrics.
+  if (header?.status_code !== 200 || isPlaceholderToken(token)) {
+    writeJSON(MXM_TOKEN_KEY, { retryAt: Date.now() + TOKEN_RETRY_MS });
+    throw new Error(`Musixmatch token unavailable (${header?.hint || header?.status_code})`);
+  }
+  writeJSON(MXM_TOKEN_KEY, { token });
+  return token;
+}
+
 export async function musixmatch(track) {
-  const headers = { authority: "apic-desktop.musixmatch.com", cookie: "x-mxm-token-guid=" };
-  const base = "https://apic-desktop.musixmatch.com/ws/1.1/";
-
-  const getToken = async (force) => {
-    const cached = readJSON(MXM_TOKEN_KEY, null);
-    if (!force && cached && cached.expires > Date.now() && !/^0+$/.test(cached.token)) return cached.token;
-    const j = await cosmosGet(`${base}token.get?app_id=web-desktop-app-v1.0`, headers);
-    const token = j?.message?.body?.user_token;
-    // When rate-limited, Musixmatch hands out a placeholder token that returns decoy lyrics.
-    if (!token || token.startsWith("UpgradeOnly") || /^0+$/.test(token)) {
-      localStorage.removeItem(MXM_TOKEN_KEY);
-      throw new Error("Musixmatch token unavailable");
-    }
-    writeJSON(MXM_TOKEN_KEY, { token, expires: Date.now() + 10 * 60 * 1000 });
-    return token;
-  };
-
   const query = async (token) => {
     const params = new URLSearchParams({
       format: "json",
       namespace: "lyrics_richsynched",
       subtitle_format: "mxm",
-      app_id: "web-desktop-app-v1.0",
+      app_id: APP_ID,
       q_album: track.album,
       q_artist: track.artist,
       q_artists: track.artist,
@@ -39,7 +58,7 @@ export async function musixmatch(track) {
       optional_calls: "track.richsync",
       richsync_compact_type: "words",
     });
-    return cosmosGet(`${base}macro.subtitles.get?${params}`, headers);
+    return cosmosGet(`${API}macro.subtitles.get?${params}`, HEADERS);
   };
 
   let j = await query(await getToken(false));

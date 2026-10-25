@@ -64,7 +64,7 @@ Header controls:
 | Control | What it does |
 | --- | --- |
 | **via _Source_** | Opens the song's page on the site the lyrics came from. |
-| **Karaoke** | Switches to word-by-word highlighting. Only shown when the song has word timings (see [Karaoke view](#karaoke-view)). Your choice is remembered. |
+| **Karaoke** | Switches between the normal view and word-by-word highlighting (see [Karaoke view](#karaoke-view)). Your choice is remembered. |
 | **−0.5s / +0.5s** | Shifts the lyrics later or earlier for this song. The offset is remembered. |
 | **Refetch** | Searches all sources online again (see [Caching](#caching)). |
 | **Settings** | Turn sources on or off and change the order they're tried in (↑ / ↓). |
@@ -76,24 +76,29 @@ Sources are tried top to bottom; the first one with **synced** lyrics wins. If n
 | Source | Notes | "via" link opens |
 | --- | --- | --- |
 | [LRCLIB](https://lrclib.net) | Free, open, community-run lyrics database. Best first choice. | `lrclib.net/tracks/<id>` |
-| [Musixmatch](https://www.musixmatch.com) | Large catalogue, accessed through the desktop app's unofficial API. May be rate-limited (see Troubleshooting). | The song's Musixmatch lyrics page |
+| [Musixmatch](https://www.musixmatch.com) | Large catalogue, accessed through the iOS app's unofficial API (like Spicetify's Lyrics Plus). May be rate-limited (see Troubleshooting). | The song's Musixmatch lyrics page |
 | [NetEase Cloud Music](https://music.163.com) | Good coverage of Asian music. Unofficial API. | `music.163.com/#/song?id=<id>` |
 
 Every match is checked against the playing song's title, artist and length, so lyrics for an unrelated song are thrown out.
 
 ## Karaoke view
 
-When the lyrics for a song include word-level timings, a **Karaoke** button appears in the header. Turn it on to see each word fill in as it's sung, instead of whole lines lighting up.
+Click **Karaoke** in the header to see each word fill in as it's sung, instead of whole lines lighting up.
+
+- If the song's lyrics already have word timings, they're shown straight away.
+- If not, the other enabled services are asked for word-synced lyrics for the song, and the first one found is shown (its "via" link points to that service).
+- If no service has word-synced lyrics, the karaoke view shows "No lyrics found for this song". Switch Karaoke off to go back to the normal synced lyrics.
 
 | Source | Word timings |
 | --- | --- |
 | LRCLIB | Yes, from its [Lyricsfile](https://github.com/tranxuanthang/lyricsfile) format (marked "Word Synced" on lrclib.net). Few songs have them so far. |
-| Musixmatch | Yes, from its "richsync" lyrics, on songs Musixmatch has word-synced. Only works while Musixmatch isn't rate-limiting (see [Troubleshooting](#troubleshooting)). |
+| Musixmatch | Yes, from its "richsync" lyrics, which many popular songs have. |
 | NetEase | No. Its word-level lyrics require a logged-in NetEase account. |
 
-- The button won't appear for most songs.
+- Word-synced lyrics are still rare, so expect "No lyrics found" in the karaoke view for most songs.
 - Lines without word timings are filled across the whole line.
-- Lyrics cached before karaoke support was added don't include word timings. Press **Refetch** to get them.
+- Word-synced lyrics found for the karaoke view are cached permanently, like other synced lyrics. Not finding any is never cached, so the services are asked again next time.
+- **Refetch** in the karaoke view also searches for word-synced lyrics again. If none are found, an error is shown and any cached word-synced lyrics are kept.
 
 ## Caching
 
@@ -115,7 +120,7 @@ Spotify renamed its layout classes. The extension tries `.Root__main-view`, `.ma
 None of the enabled sources has the song. Make sure all sources are enabled in Settings, then try **Refetch**. You can also add the lyrics to [LRCLIB](https://lrclib.net) yourself; it's an open database anyone can contribute to.
 
 **Musixmatch never returns anything.**
-Musixmatch rate-limits this kind of access. When it does, it returns a placeholder token and decoy lyrics, which the extension detects and ignores. Wait a while, or turn Musixmatch off in Settings.
+Musixmatch needs an access token, and it rate-limits requests for new ones. When a token request is refused (or answered with a placeholder token that returns decoy lyrics), the extension skips Musixmatch and tries again 10 minutes later. Once it has a token it keeps using it until Musixmatch rejects it. If it keeps failing, turn Musixmatch off in Settings.
 
 **Lyrics are slightly out of sync.**
 Use the **−0.5s / +0.5s** buttons. The offset is saved for that song.
@@ -128,16 +133,17 @@ Everything stays inside the Spotify app on your computer:
 | --- | --- | --- |
 | `localStorage` | `synced-lyrics:settings` | Source order, on/off state and karaoke preference |
 | `localStorage` | `synced-lyrics:offsets` | Per-song timing offsets |
-| `localStorage` | `synced-lyrics:mxm-token` | Temporary Musixmatch access token |
-| IndexedDB | `synced-lyrics` → `lyrics` | Cached synced lyrics (including word timings), keyed by Spotify URI |
+| `localStorage` | `synced-lyrics:mxm-token` | Musixmatch access token (or when to retry getting one) |
+| IndexedDB | `synced-lyrics` → `lyrics` | Cached synced lyrics (including word timings), keyed by Spotify URI; karaoke-view lyrics from another service under `<uri>#karaoke` |
 
 The extension sends song title, artist, album and length only to the enabled lyrics sources.
 
 ## Development
 
-The source lives in `src/` as small ES modules. Spicetify loads every extension as a single script and can't load files from a subfolder of `Extensions`, so `build.mjs` bundles `src/` into one file, `dist/syncedLyrics.js`. It has no dependencies; you only need [Node.js](https://nodejs.org) 18 or newer.
+The source lives in `src/` as small ES modules. Spicetify loads every extension as a single script and can't load files from a subfolder of `Extensions`, so `build.mjs` bundles `src/` into one minified file, `dist/syncedLyrics.js`, using [terser](https://terser.org) to strip whitespace and comments and shorten local names. You need [Node.js](https://nodejs.org) 18 or newer.
 
 ```sh
+npm install      # once: installs terser
 npm run build    # build dist/syncedLyrics.js
 npm run deploy   # build, then copy it into Spicetify's Extensions folder
 spicetify apply  # reload Spotify with the new build
@@ -168,7 +174,7 @@ src/
     dom.js              the lyrics page's DOM
     styles.js           CSS
 build.mjs               bundler
-dist/syncedLyrics.js    built extension (committed so users can download it)
+dist/syncedLyrics.js    built, minified extension (committed so users can download it)
 ```
 
 ### Bundler rules
@@ -178,6 +184,7 @@ The bundler concatenates the modules into one shared scope, so it supports a del
 - Imports must be named and relative: `import { a, b } from "./file.js";` (no `as` renames).
 - Exports must be declarations: `export function`, `export async function`, `export const`, `export let` or `export class`.
 - Every top-level name must be unique across all of `src/`, and imports can't be circular.
+- CSS and HTML go in `` css`...` `` / `` html`...` `` templates (from `src/util.js`) without `${}` placeholders, so the build can minify them.
 
 The build fails with a clear message if any rule is broken. Run `npm run build` and commit `dist/syncedLyrics.js` along with your changes to `src/`.
 
