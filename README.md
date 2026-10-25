@@ -14,6 +14,7 @@ Lyrics come from public lyrics databases (LRCLIB, Musixmatch and NetEase), so ma
 - **Multiple sources**, tried in an order you choose. Each source can be turned on or off.
 - **Source link**: click "via LRCLIB / Musixmatch / NetEase" to open the song's page on that site.
 - **Permanent cache** of synced lyrics, so a song is only looked up once.
+- **Karaoke view**: word-by-word highlighting for songs that have word timings on LRCLIB.
 - **Album-colour background**, plus a fallback to unsynced lyrics when no synced version exists.
 
 ## Requirements
@@ -23,7 +24,7 @@ Lyrics come from public lyrics databases (LRCLIB, Musixmatch and NetEase), so ma
 
 ## Installation
 
-1. Download [`syncedLyrics.js`](syncedLyrics.js) from this repository.
+1. Download the ready-built [`dist/syncedLyrics.js`](dist/syncedLyrics.js) from this repository (or [build it yourself](#development)).
 2. Copy it into your Spicetify `Extensions` folder:
 
    | OS | Folder |
@@ -42,7 +43,7 @@ spicetify apply
 
 ### Updating
 
-Replace `syncedLyrics.js` in the `Extensions` folder with the new version and run `spicetify apply` again.
+Replace `syncedLyrics.js` in the `Extensions` folder with the new version and run `spicetify apply` again. From a clone of this repo, `npm run deploy` does the build and copy for you.
 
 ### Uninstalling
 
@@ -63,6 +64,7 @@ Header controls:
 | Control | What it does |
 | --- | --- |
 | **via _Source_** | Opens the song's page on the site the lyrics came from. |
+| **Karaoke** | Switches to word-by-word highlighting. Only shown when the song has word timings (see [Karaoke view](#karaoke-view)). Your choice is remembered. |
 | **−0.5s / +0.5s** | Shifts the lyrics later or earlier for this song. The offset is remembered. |
 | **Refetch** | Searches all sources online again (see [Caching](#caching)). |
 | **Settings** | Turn sources on or off and change the order they're tried in (↑ / ↓). |
@@ -78,6 +80,14 @@ Sources are tried top to bottom; the first one with **synced** lyrics wins. If n
 | [NetEase Cloud Music](https://music.163.com) | Good coverage of Asian music. Unofficial API. | `music.163.com/#/song?id=<id>` |
 
 Every match is checked against the playing song's title, artist and length, so lyrics for an unrelated song are thrown out.
+
+## Karaoke view
+
+LRCLIB can store word-level timings in its [Lyricsfile](https://github.com/tranxuanthang/lyricsfile) format (marked "Word Synced" on lrclib.net). When the lyrics for a song include them, a **Karaoke** button appears in the header. Turn it on to see each word fill in as it's sung, instead of whole lines lighting up.
+
+- Few songs on LRCLIB have word timings so far, so the button won't appear for most songs.
+- Lines without word timings are filled across the whole line.
+- Lyrics cached before karaoke support was added don't include word timings. Press **Refetch** to get them.
 
 ## Caching
 
@@ -110,12 +120,60 @@ Everything stays inside the Spotify app on your computer:
 
 | Where | Key | Contents |
 | --- | --- | --- |
-| `localStorage` | `synced-lyrics:settings` | Source order and on/off state |
+| `localStorage` | `synced-lyrics:settings` | Source order, on/off state and karaoke preference |
 | `localStorage` | `synced-lyrics:offsets` | Per-song timing offsets |
 | `localStorage` | `synced-lyrics:mxm-token` | Temporary Musixmatch access token |
-| IndexedDB | `synced-lyrics` → `lyrics` | Cached synced lyrics, keyed by Spotify URI |
+| IndexedDB | `synced-lyrics` → `lyrics` | Cached synced lyrics (including word timings), keyed by Spotify URI |
 
 The extension sends song title, artist, album and length only to the enabled lyrics sources.
+
+## Development
+
+The source lives in `src/` as small ES modules. Spicetify loads every extension as a single script and can't load files from a subfolder of `Extensions`, so `build.mjs` bundles `src/` into one file, `dist/syncedLyrics.js`. It has no dependencies; you only need [Node.js](https://nodejs.org) 18 or newer.
+
+```sh
+npm run build    # build dist/syncedLyrics.js
+npm run deploy   # build, then copy it into Spicetify's Extensions folder
+spicetify apply  # reload Spotify with the new build
+```
+
+`npm run deploy` finds the Extensions folder automatically (`%APPDATA%\spicetify\Extensions` on Windows, `~/.config/spicetify/Extensions` elsewhere). Set `SPICETIFY_CONFIG` to use a different Spicetify folder.
+
+### Project layout
+
+```
+src/
+  index.js              bootstrap: waits for Spicetify, starts the UI, follows song changes
+  lyrics.js             lyrics state for the current track: cache, provider search, refetch
+  cache.js              permanent IndexedDB cache for synced lyrics
+  settings.js           settings, per-song timing offsets, localStorage helpers
+  util.js               text/network helpers and track matching
+  lrc.js                LRC parser
+  lyricsfile.js         Lyricsfile (YAML) parser for word timings
+  providers/
+    registry.js         provider registry
+    lrclib.js           LRCLIB
+    musixmatch.js       Musixmatch
+    netease.js          NetEase Cloud Music
+  ui/
+    overlay.js          playbar button, open/close, header controls
+    lyricsView.js       renders lyrics, line and karaoke sync, auto-scroll
+    settingsPanel.js    Settings panel
+    dom.js              the lyrics page's DOM
+    styles.js           CSS
+build.mjs               bundler
+dist/syncedLyrics.js    built extension (committed so users can download it)
+```
+
+### Bundler rules
+
+The bundler concatenates the modules into one shared scope, so it supports a deliberately small subset of module syntax:
+
+- Imports must be named and relative: `import { a, b } from "./file.js";` (no `as` renames).
+- Exports must be declarations: `export function`, `export async function`, `export const`, `export let` or `export class`.
+- Every top-level name must be unique across all of `src/`, and imports can't be circular.
+
+The build fails with a clear message if any rule is broken. Run `npm run build` and commit `dist/syncedLyrics.js` along with your changes to `src/`.
 
 ## Disclaimer
 

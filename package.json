@@ -1,0 +1,13 @@
+{
+  "name": "spicetify-synced-lyrics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Spicetify extension that shows live synced lyrics from LRCLIB, Musixmatch and NetEase.",
+  "scripts": {
+    "build": "node build.mjs",
+    "deploy": "node build.mjs --install"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
